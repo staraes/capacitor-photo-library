@@ -287,7 +287,7 @@ public class PhotoLibraryPlugin extends Plugin {
         }
 
         ContentResolver resolver = getContext().getContentResolver();
-        int flags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        int flags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
         if (flags != 0) {
             for (Uri uri : uris) {
                 try {
@@ -316,7 +316,7 @@ public class PhotoLibraryPlugin extends Plugin {
     }
 
     private boolean hasMediaPermissions() {
-        return hasPermission(permissionAlias());
+        return getPermissionState(permissionAlias()) == PermissionState.GRANTED;
     }
 
     private String currentAuthorizationState() {

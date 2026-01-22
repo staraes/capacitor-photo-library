@@ -115,7 +115,30 @@ final class PhotoLibraryService {
         int collected = 0;
         int skipped = 0;
 
-        try (Cursor cursor = resolver.query(contentUri, projection, selection.selection, selection.args, sortOrder)) {
+        Bundle queryArgs = new Bundle();
+        queryArgs.putString(
+                ContentResolver.QUERY_ARG_SQL_SELECTION,
+                selection.selection
+        );
+        queryArgs.putStringArray(
+                ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS,
+                selection.args
+        );
+        queryArgs.putString(
+                ContentResolver.QUERY_ARG_SQL_SORT_ORDER,
+                MediaStore.Images.Media.DATE_ADDED + " DESC"
+        );
+
+        if(options.limit != null){
+            queryArgs.putInt(ContentResolver.QUERY_ARG_LIMIT, options.limit);
+        }
+
+        if(options.offset > 0){
+            queryArgs.putInt(ContentResolver.QUERY_ARG_OFFSET, options.offset);
+        }
+        
+
+        try (Cursor cursor = resolver.query(contentUri, projection, queryArgs,null)) {
             if (cursor != null) {
                 while (cursor.moveToNext()) {
                     if (options.limit == null && options.offset > 0 && skipped < options.offset) {
@@ -553,6 +576,25 @@ final class PhotoLibraryService {
         return target;
     }
 
+    public Bitmap scaleBitmapFit(
+            Bitmap src,
+            int maxWidth,
+            int maxHeight
+    ) {
+        int srcW = src.getWidth();
+        int srcH = src.getHeight();
+
+        float scale = Math.min(
+                (float) maxWidth / srcW,
+                (float) maxHeight / srcH
+        );
+
+        int dstW = Math.round(srcW * scale);
+        int dstH = Math.round(srcH * scale);
+
+        return Bitmap.createScaledBitmap(src, dstW, dstH, true);
+    }
+
     @Nullable
     private File ensureThumbnail(MediaAsset asset, int width, int height, double quality) throws IOException {
         int qualityPercent = (int) Math.max(0, Math.min(100, Math.round(quality * 100)));
@@ -587,7 +629,7 @@ final class PhotoLibraryService {
             return null;
         }
 
-        Bitmap scaled = Bitmap.createScaledBitmap(bitmap, width, height, true);
+        Bitmap scaled = scaleBitmapFit(bitmap, width, height);
         if (bitmap != scaled) {
             bitmap.recycle();
         }
@@ -676,7 +718,7 @@ final class PhotoLibraryService {
                 if (bitmap == null) {
                     return null;
                 }
-                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, width, height, true);
+                Bitmap scaled = scaleBitmapFit(bitmap, width, height);
                 if (scaled != bitmap) {
                     bitmap.recycle();
                 }
